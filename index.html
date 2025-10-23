@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acid-Base Chemistry Experiment Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .experiment-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .canvas-container {
+            flex: 0 0 400px;
+        }
+
+        .controls {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .control-panel h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            margin: 8px 0;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:active {
+            background: #004085;
+        }
+
+        .output-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .output-area h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+
+        .workbook-output {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 4px;
+        }
+
+        .legend {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .legend h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+
+        .ion-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .selection-group {
+            margin-bottom: 15px;
+        }
+
+        .selection-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .compound-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .concentration-slider {
+            width: 70%;
+            margin-right: 10px;
+        }
+
+        #concentration-display {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .prediction-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4fd;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+
+        .prediction-section h4 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+
+        .prediction-buttons {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .prediction-btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 12px;
+            background: #e9ecef;
+            color: #495057;
+            border: 1px solid #ced4da;
+            margin: 0;
+        }
+
+        .prediction-btn:hover {
+            background: #dee2e6;
+        }
+
+        .prediction-btn.selected {
+            background: #007bff;
+            color: white;
+        }
+
+        .prediction-feedback {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .prediction-feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .prediction-feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        #mix-button:disabled {
+            background: #6c757d !important;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .experiment-area {
+                flex-direction: column;
+            }
+            
+            .canvas-container {
+                flex: none;
+                width: 100%;
+            }
+            
+            .controls {
+                width: 100%;
+            }
+
+            .prediction-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Acid-Base Chemistry Experiment Simulator</h1>
+        
+        <div class="experiment-area">
+            <div class="canvas-container">
+                <div id="canvas-holder"></div>
+                
+                <div class="legend">
+                    <h4>Ion Legend</h4>
+                    <div><span class="ion-color" style="background: #ff4444;"></span>H⁺ (Hydrogen ion)</div>
+                    <div><span class="ion-color" style="background: #44ff44;"></span>Cl⁻ (Chloride ion)</div>
+                    <div><span class="ion-color" style="background: #4444ff;"></span>Na⁺ (Sodium ion)</div>
+                    <div><span class="ion-color" style="background: #ff44ff;"></span>OH⁻ (Hydroxide ion)</div>
+                    <div><span class="ion-color" style="background: #ffaa44;"></span>NH₄⁺ (Ammonium ion)</div>
+                    <div><span class="ion-color" style="background: #ffff44;"></span>CH₃COO⁻ (Acetate ion)</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-panel">
+                    <h3>Create Your Own Experiment</h3>
+                    
+                    <div class="selection-group">
+                        <label for="acid-select">Choose an Acid:</label>
+                        <select id="acid-select" class="compound-select">
+                            <option value="">-- Select Acid --</option>
+                            <option value="HCl">HCl (Hydrochloric acid - Strong)</option>
+                            <option value="CH3COOH">CH₃COOH (Acetic acid - Weak)</option>
+                        </select>
+                    </div>
+
+                    <div class="selection-group">
+                        <label for="base-select">Choose a Base:</label>
+                        <select id="base-select" class="compound-select">
+                            <option value="">-- Select Base --</option>
+                            <option value="NaOH">NaOH (Sodium hydroxide - Strong)</option>
+                            <option value="NH3">NH₃ (Ammonia - Weak)</option>
+                        </select>
+                    </div>
+
+                    <div class="selection-group">
+                        <label for="concentration">Concentration (M):</label>
+                        <input type="range" id="concentration" min="0.1" max="2.0" step="0.1" value="1.0" class="concentration-slider">
+                        <span id="concentration-display">1.0 M</span>
+                    </div>
+
+                    <button onclick="mixSolutions()" id="mix-button" style="background: #28a745; margin-top: 15px;" disabled>Mix Solutions</button>
+                    <button onclick="clearExperiment()" style="background: #6c757d;">Clear & Reset</button>
+
+                    <div id="prediction-area" class="prediction-section" style="display: none;">
+                        <h4>Make a Prediction</h4>
+                        <p>Before mixing, predict: Will the final solution be acidic, basic, or neutral?</p>
+                        <div class="prediction-buttons">
+                            <button onclick="makePrediction('acidic')" class="prediction-btn">Acidic (pH < 7)</button>
+                            <button onclick="makePrediction('neutral')" class="prediction-btn">Neutral (pH = 7)</button>
+                            <button onclick="makePrediction('basic')" class="prediction-btn">Basic (pH > 7)</button>
+                        </div>
+                        <div id="prediction-feedback" class="prediction-feedback"></div>
+                    </div>
+                </div>
+                
+                <div class="output-area">
+                    <h3>Experiment Results</h3>
+                    <div id="workbook-output" class="workbook-output">Select an acid and base, then click "Mix Solutions" to see what happens!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let particles = [];
+        let currentExperiment = '';
+        let selectedAcid = '';
+        let selectedBase = '';
+        let concentration = 1.0;
+        let userPrediction = '';
+        let mixingStage = 'ready'; // 'ready', 'mixing', 'complete'
+        let mixingProgress = 0;
+        
+        const ionColors = {
+            'H+': '#ff4444',
+            'Cl-': '#44ff44',
+            'Na+': '#4444ff',
+            'OH-': '#ff44ff',
+            'NH4+': '#ffaa44',
+            'CH3COO-': '#ffff44'
+        };
+        
+        const constants = {
+            Kw: 1e-14,
+            Ka_NH4: 5.6e-10,
+            Kb_CH3COO: 5.6e-10
+        };
+
+        function setup() {
+            let canvas = createCanvas(400, 400);
+            canvas.parent('canvas-holder');
+            background(240);
+            
+            // Set up event listeners
+            document.getElementById('acid-select').addEventListener('change', updateSelections);
+            document.getElementById('base-select').addEventListener('change', updateSelections);
+            document.getElementById('concentration').addEventListener('input', updateConcentration);
+        }
+
+        function draw() {
+            background(240);
+            
+            // Draw mixing containers or combined solution
+            if (mixingStage === 'ready' && selectedAcid && selectedBase) {
+                drawSeparateContainers();
+            } else if (mixingStage === 'mixing') {
+                drawMixingAnimation();
+            } else if (mixingStage === 'complete') {
+                drawMixedSolution();
+            }
+            
+            // Draw particles
+            for (let particle of particles) {
+                particle.update();
+                particle.display();
+            }
+            
+            // Draw labels and pH meter
+            fill(0);
+            textAlign(CENTER);
+            textSize(14);
+            if (currentExperiment) {
+                text(currentExperiment, width/2, 20);
+            }
+        }
+
+        function drawSeparateContainers() {
+            // Left container (acid)
+            fill(255, 200, 200, 100);
+            rect(50, 50, 120, 150);
+            fill(0);
+            textAlign(CENTER);
+            textSize(12);
+            text(`${selectedAcid}`, 110, 45);
+            text(`${concentration}M`, 110, 210);
+            
+            // Right container (base)  
+            fill(200, 200, 255, 100);
+            rect(230, 50, 120, 150);
+            text(`${selectedBase}`, 290, 45);
+            text(`${concentration}M`, 290, 210);
+            
+            // Arrow
+            fill(0);
+            text("→ MIXING →", width/2, 250);
+        }
+
+        function drawMixingAnimation() {
+            // Show swirling effect
+            fill(220, 220, 255, 150);
+            rect(100, 50, 200, 150);
+            fill(0);
+            textAlign(CENTER);
+            text("Mixing...", width/2, 45);
+            text(`${Math.round(mixingProgress)}%`, width/2, 250);
+        }
+
+        function drawMixedSolution() {
+            // Final mixed container
+            fill(240, 240, 240, 100);
+            rect(100, 50, 200, 150);
+            stroke(0);
+            noFill();
+            rect(100, 50, 200, 150);
+            noStroke();
+            
+            fill(0);
+            textAlign(CENTER);
+            text("Final Solution", width/2, 45);
+        }
+
+        class Particle {
+            constructor(x, y, color, label, container = 'mixed') {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.label = label;
+                this.container = container;
+                this.vx = random(-0.5, 0.5);
+                this.vy = random(-0.5, 0.5);
+                this.targetX = x;
+                this.targetY = y;
+            }
+            
+            update() {
+                if (mixingStage === 'mixing') {
+                    // Move particles toward center during mixing
+                    this.x = lerp(this.x, this.targetX, 0.02);
+                    this.y = lerp(this.y, this.targetY, 0.02);
+                } else {
+                    // Normal random movement
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    
+                    let bounds = this.getBounds();
+                    if (this.x < bounds.left || this.x > bounds.right) this.vx *= -1;
+                    if (this.y < bounds.top || this.y > bounds.bottom) this.vy *= -1;
+                    
+                    this.x = constrain(this.x, bounds.left, bounds.right);
+                    this.y = constrain(this.y, bounds.top, bounds.bottom);
+                }
+            }
+            
+            getBounds() {
+                if (mixingStage === 'ready') {
+                    if (this.container === 'acid') {
+                        return {left: 55, right: 165, top: 55, bottom: 195};
+                    } else {
+                        return {left: 235, right: 345, top: 55, bottom: 195};
+                    }
+                } else {
+                    return {left: 105, right: 295, top: 55, bottom: 195};
+                }
+            }
+            
+            display() {
+                fill(this.color);
+                noStroke();
+                circle(this.x, this.y, 8);
+            }
+        }
+
+        function updateSelections() {
+            selectedAcid = document.getElementById('acid-select').value;
+            selectedBase = document.getElementById('base-select').value;
+            
+            const mixButton = document.getElementById('mix-button');
+            const predictionArea = document.getElementById('prediction-area');
+            
+            if (selectedAcid && selectedBase) {
+                mixButton.disabled = false;
+                predictionArea.style.display = 'block';
+                showInitialIons();
+            } else {
+                mixButton.disabled = true;
+                predictionArea.style.display = 'none';
+                particles = [];
+            }
+        }
+
+        function updateConcentration() {
+            concentration = parseFloat(document.getElementById('concentration').value);
+            document.getElementById('concentration-display').textContent = concentration.toFixed(1) + ' M';
+        }
+
+        function showInitialIons() {
+            particles = [];
+            mixingStage = 'ready';
+            currentExperiment = `${selectedAcid} + ${selectedBase}`;
+            
+            // Create acid particles (left side)
+            if (selectedAcid === 'HCl') {
+                for (let i = 0; i < Math.round(concentration * 10); i++) {
+                    let x = random(60, 160);
+                    let y = random(60, 190);
+                    particles.push(new Particle(x, y, ionColors['H+'], 'H+', 'acid'));
+                    particles.push(new Particle(x + 10, y + 10, ionColors['Cl-'], 'Cl-', 'acid'));
+                }
+            } else if (selectedAcid === 'CH3COOH') {
+                // Weak acid - show fewer dissociated ions
+                for (let i = 0; i < Math.round(concentration * 3); i++) {
+                    let x = random(60, 160);
+                    let y = random(60, 190);
+                    particles.push(new Particle(x, y, ionColors['H+'], 'H+', 'acid'));
+                    particles.push(new Particle(x + 10, y + 10, ionColors['CH3COO-'], 'CH3COO-', 'acid'));
+                }
+            }
+            
+            // Create base particles (right side)
+            if (selectedBase === 'NaOH') {
+                for (let i = 0; i < Math.round(concentration * 10); i++) {
+                    let x = random(240, 340);
+                    let y = random(60, 190);
+                    particles.push(new Particle(x, y, ionColors['Na+'], 'Na+', 'base'));
+                    particles.push(new Particle(x + 10, y + 10, ionColors['OH-'], 'OH-', 'base'));
+                }
+            } else if (selectedBase === 'NH3') {
+                // Weak base - show fewer OH- ions
+                for (let i = 0; i < Math.round(concentration * 3); i++) {
+                    let x = random(240, 340);
+                    let y = random(60, 190);
+                    particles.push(new Particle(x, y, ionColors['NH4+'], 'NH4+', 'base'));
+                    particles.push(new Particle(x + 10, y + 10, ionColors['OH-'], 'OH-', 'base'));
+                }
+            }
+        }
+
+        function makePrediction(prediction) {
+            userPrediction = prediction;
+            
+            // Update button states
+            document.querySelectorAll('.prediction-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            document.getElementById('prediction-feedback').style.display = 'none';
+        }
+
+        function mixSolutions() {
+            if (!selectedAcid || !selectedBase) return;
+            
+            mixingStage = 'mixing';
+            mixingProgress = 0;
+            
+            // Set target positions for mixing animation
+            particles.forEach(particle => {
+                particle.targetX = random(120, 280);
+                particle.targetY = random(70, 180);
+            });
+            
+            // Animate mixing process
+            let mixingInterval = setInterval(() => {
+                mixingProgress += 2;
+                if (mixingProgress >= 100) {
+                    clearInterval(mixingInterval);
+                    completeMixing();
+                }
+            }, 50);
+        }
+
+        function completeMixing() {
+            mixingStage = 'complete';
+            
+            // Calculate reaction products and pH
+            let result = calculateReaction(selectedAcid, selectedBase, concentration);
+            
+            // Update particles to show final products
+            particles = [];
+            for (let [ion, count] of Object.entries(result.ions)) {
+                for (let i = 0; i < count; i++) {
+                    let x = random(120, 280);
+                    let y = random(70, 180);
+                    particles.push(new Particle(x, y, ionColors[ion], ion, 'mixed'));
+                }
+            }
+            
+            // Show results
+            showResults(result);
+        }
+
+        function calculateReaction(acid, base, conc) {
+            let result = {
+                equation: '',
+                ions: {},
+                pH: 7,
+                saltType: 'neutral',
+                products: []
+            };
+            
+            if (acid === 'HCl' && base === 'NaOH') {
+                result.equation = 'HCl + NaOH → NaCl + H₂O';
+                result.ions = {'Na+': Math.round(conc * 5), 'Cl-': Math.round(conc * 5)};
+                result.pH = 7.0;
+                result.saltType = 'neutral';
+                result.products = ['NaCl', 'H₂O'];
+            } else if (acid === 'HCl' && base === 'NH3') {
+                result.equation = 'HCl + NH₃ → NH₄Cl';
+                result.ions = {'NH4+': Math.round(conc * 5), 'Cl-': Math.round(conc * 5)};
+                let hPlusConc = Math.sqrt(constants.Ka_NH4 * (conc * 0.5));
+                result.pH = -Math.log10(hPlusConc);
+                result.saltType = 'acidic';
+                result.products = ['NH₄Cl'];
+            } else if (acid === 'CH3COOH' && base === 'NaOH') {
+                result.equation = 'CH₃COOH + NaOH → CH₃COONa + H₂O';
+                result.ions = {'Na+': Math.round(conc * 5), 'CH3COO-': Math.round(conc * 5)};
+                let ohMinusConc = Math.sqrt(constants.Kb_CH3COO * (conc * 0.5));
+                result.pH = 14 + Math.log10(ohMinusConc);
+                result.saltType = 'basic';
+                result.products = ['CH₃COONa', 'H₂O'];
+            } else if (acid === 'CH3COOH' && base === 'NH3') {
+                result.equation = 'CH₃COOH + NH₃ → CH₃COONH₄';
+                result.ions = {'NH4+': Math.round(conc * 3), 'CH3COO-': Math.round(conc * 3)};
+                result.pH = 7.0; // Approximately neutral (Ka ≈ Kb)
+                result.saltType = 'neutral';
+                result.products = ['CH₃COONH₄'];
+            }
+            
+            return result;
+        }
+
+        function showResults(result) {
+            let predictionCorrect = checkPrediction(result.pH);
+            
+            let output = `Experiment: ${selectedAcid} + ${selectedBase}
+
+Balanced Equation: ${result.equation}
+
+Products Formed: ${result.products.join(', ')}
+
+Final pH: ${result.pH.toFixed(2)}
+
+Salt Type: ${result.saltType.charAt(0).toUpperCase() + result.saltType.slice(1)}
+
+Ions in Solution: ${Object.entries(result.ions).map(([ion, count]) => 
+    `${ion}: ${(count/10).toFixed(1)}M`).join(', ')}
+
+Concentration Used: ${concentration}M each`;
+
+            if (userPrediction) {
+                output += `\n\nYour Prediction: ${userPrediction.charAt(0).toUpperCase() + userPrediction.slice(1)}`;
+                output += `\nResult: ${predictionCorrect ? 'Correct! 🎉' : 'Try again next time!'}`;
+            }
+            
+            document.getElementById('workbook-output').textContent = output;
+            
+            // Show prediction feedback
+            if (userPrediction) {
+                showPredictionFeedback(predictionCorrect, result.saltType);
+            }
+        }
+
+        function checkPrediction(pH) {
+            if (userPrediction === 'acidic' && pH < 7) return true;
+            if (userPrediction === 'neutral' && Math.abs(pH - 7) < 0.5) return true;
+            if (userPrediction === 'basic' && pH > 7) return true;
+            return false;
+        }
+
+        function showPredictionFeedback(correct, actualType) {
+            const feedback = document.getElementById('prediction-feedback');
+            feedback.style.display = 'block';
+            
+            if (correct) {
+                feedback.className = 'prediction-feedback correct';
+                feedback.textContent = `Correct! The solution is ${actualType}. Great prediction! 🎉`;
+            } else {
+                feedback.className = 'prediction-feedback incorrect';
+                feedback.textContent = `Not quite. The solution is actually ${actualType}. Try to think about the strength of the acid vs base next time!`;
+            }
+        }
+
+        function clearExperiment() {
+            selectedAcid = '';
+            selectedBase = '';
+            userPrediction = '';
+            mixingStage = 'ready';
+            currentExperiment = '';
+            particles = [];
+            
+            document.getElementById('acid-select').value = '';
+            document.getElementById('base-select').value = '';
+            document.getElementById('mix-button').disabled = true;
+            document.getElementById('prediction-area').style.display = 'none';
+            document.getElementById('prediction-feedback').style.display = 'none';
+            document.querySelectorAll('.prediction-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            document.getElementById('workbook-output').textContent = 'Select an acid and base, then click "Mix Solutions" to see what happens!';
+        }
+    </script>
+</body>
+</html>
